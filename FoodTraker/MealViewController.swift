@@ -1,5 +1,5 @@
 //
-//  ViewController.swift
+//  MealViewController.swift
 //  FoodTraker
 //
 //  Created by Dewald de Jager on 2019/04/04.
@@ -7,19 +7,43 @@
 //
 
 import UIKit
+import os.log
 
-class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+class MealViewController: UIViewController, UITextFieldDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     // MARK: Properties
     @IBOutlet weak var textMealName: UITextField!
-    @IBOutlet weak var mealNameLabel: UILabel!
     @IBOutlet weak var imageDefaultPhoto: UIImageView!
     @IBOutlet weak var ratingControl: RatingControl!
+    @IBOutlet weak var saveButton: UIBarButtonItem!
+    var meal: Meal?
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
         // Handle the text field’s user input through delegate callbacks.
         textMealName.delegate = self
+        
+        updateSaveButtonState()
+    }
+    
+    // MARK: Navigation
+    @IBAction func cancel(_ sender: UIBarButtonItem) {
+        dismiss(animated: true, completion: nil)
+    }
+    
+    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+        super.prepare(for: segue, sender: sender)
+        
+        guard let button = sender as? UIBarButtonItem, button == saveButton else {
+            os_log("The save button was not pressed, cancelling", log: OSLog.default, type: .debug)
+            return
+        }
+        
+        let name = textMealName.text ?? "" // Nil coalescing operator
+        let photo = imageDefaultPhoto.image
+        let rating = ratingControl.rating
+        
+        meal = Meal(name: name, photo: photo, rating: rating)
     }
     
     // MARK: Actions
@@ -31,7 +55,7 @@ class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerContro
         let imagePickerController = UIImagePickerController()
         imagePickerController.sourceType = .photoLibrary
 
-        // Make sure ViewController is notified when the user picks an image.
+        // Make sure MealViewController is notified when the user picks an image.
         imagePickerController.delegate = self
         
         present(imagePickerController, animated: true, completion: nil)
@@ -48,7 +72,12 @@ class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerContro
     }
     
     func textFieldDidEndEditing(_ textField: UITextField) {
-        mealNameLabel.text = textMealName.text
+        updateSaveButtonState()
+        navigationItem.title = textField.text
+    }
+    
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        saveButton.isEnabled = false
     }
     
     // MARK: UIImagePickerControllerDelegate
@@ -68,6 +97,12 @@ class ViewController: UIViewController, UITextFieldDelegate, UIImagePickerContro
         
         // Dismiss the picker.
         dismiss(animated: true, completion: nil)
+    }
+    
+    // MARK: Private methods
+    private func updateSaveButtonState() {
+        let text = textMealName.text ?? ""
+        saveButton.isEnabled = !text.isEmpty
     }
 }
 
